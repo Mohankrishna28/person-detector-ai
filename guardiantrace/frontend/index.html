@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GuardianTrace | Privacy-First AI Search</title>
+    <link rel="stylesheet" href="/static/style.css?v=3">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="app-container">
+        
+        <!-- Header -->
+        <header class="topbar">
+            <div class="logo">
+                <span class="logo-icon">🛡️</span>
+                <h1>Guardian<span class="text-highlight">Trace</span></h1>
+            </div>
+            <div class="privacy-badge box-glow">
+                <span class="pulse-dot"></span>
+                <span>No facial recognition. No biometric tracking. Privacy-first AI.</span>
+            </div>
+        </header>
+
+        <!-- Two Panel Layout -->
+        <main class="dashboard">
+            
+            <!-- Left: Video Feed -->
+            <section class="video-panel">
+                <div class="video-wrapper" id="videoWrapper">
+                    <img id="videoStream" src="" alt="Live Video Feed" class="hidden">
+                    <div class="video-placeholder" id="videoPlaceholder">
+                        <div class="placeholder-icon">📹</div>
+                        <p>Awaiting video source</p>
+                    </div>
+                    <!-- Overlay for intense match -->
+                    <div class="match-overlay hidden" id="matchOverlay"></div>
+                </div>
+                
+                <div class="status-bar glass">
+                    <div class="status-indicator">
+                        <div class="status-dot" id="wsStatusDot"></div>
+                        <span id="wsStatusText">System Idle</span>
+                    </div>
+                    <button id="pauseBtn" class="btn-secondary hidden" style="padding: 0.3rem 0.8rem; border-radius: 4px; border: 1px solid rgba(255,255,255,0.2); background: rgba(255,255,255,0.1); color: white; cursor: pointer; font-size: 0.85rem; font-weight: 600; transition: all 0.2s;">Pause</button>
+                    <button id="stopBtn" class="btn-danger hidden" style="padding: 0.3rem 0.8rem; border-radius: 4px; border: 1px solid rgba(239, 68, 68, 0.4); background: rgba(239, 68, 68, 0.2); color: white; cursor: pointer; font-size: 0.85rem; font-weight: 600; transition: all 0.2s; margin-left: 0.5rem;">Upload New Video</button>
+                    <div class="match-score">Current Match Score: <span class="score-value" id="maxScoreDisplay">0%</span></div>
+                </div>
+                
+                <!-- Heatmap Timeline Scrubber -->
+                <div class="timeline-container glass" style="margin-top: 1rem; padding: 1rem 1.5rem; border-radius: 12px; display: flex; flex-direction: column; gap: 0.5rem;">
+                    <div style="display: flex; justify-content: space-between; font-size: 0.85rem; color: var(--text-muted); font-weight: 600;">
+                        <span id="timelineStart" style="font-family: monospace;">00:00</span>
+                        <span style="color: var(--text-main); font-size: 0.9rem;">Intelligence Heatmap Timeline</span>
+                        <span id="timelineEnd" style="font-family: monospace;">--:--</span>
+                    </div>
+                    <div class="timeline-track" id="timelineTrack" style="width: 100%; height: 12px; background: rgba(255,255,255,0.05); border-radius: 6px; position: relative; overflow: hidden; cursor: pointer; box-shadow: inset 0 2px 6px rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.1);">
+                        <!-- The dynamic progression bar -->
+                        <div id="timelineFill" style="position: absolute; left: 0; top: 0; bottom: 0; width: 0%; background: linear-gradient(90deg, rgba(59, 130, 246, 0.1), rgba(59, 130, 246, 0.5)); pointer-events: none; transition: width 0.15s linear; border-right: 2px solid #3B82F6; border-radius: 6px 0 0 6px;"></div>
+                        <!-- Snapshot Pins -->
+                        <div id="timelinePins" style="position: absolute; inset: 0; pointer-events: none;"></div>
+                    </div>
+                </div>
+                
+                <!-- Auto-Snapshot Evidence Gallery -->
+                <div class="evidence-gallery glass" id="evidenceGalleryParent" style="margin-top: 1rem; padding: 1.5rem; border-radius: 12px; display: flex; flex-direction: column; gap: 1rem;">
+                    <h3 style="font-size: 1.1rem; color: var(--text-main); font-weight: 600; display: flex; align-items: center; gap: 0.5rem; margin: 0;">
+                        <span style="font-size: 1.2rem;">📸</span> Evidence Logs
+                    </h3>
+                    <div id="galleryWrapper" style="display:flex; flex-direction:column; gap:1.5rem; overflow-y:auto; max-height:220px;">
+                        <div id="galleryContainer" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 0.8rem; padding-right: 0.5rem;">
+                            <p style="color: var(--text-muted); font-size: 0.85rem; grid-column: 1 / -1; margin: 0;">No targets captured yet...</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Right: Controls -->
+            <section class="control-panel">
+                <div class="panel-card glass">
+                    <h2>Target Description</h2>
+                    <p class="subtitle">Enter simple clothing colors (e.g. "red shirt black pants")</p>
+                    
+                    <form id="traceForm" class="trace-form">
+                        <div class="input-group">
+                            <label for="description">Natural Language Query</label>
+                            <input type="text" id="description" name="description" placeholder="e.g. white shirt blue pants" required autocomplete="off">
+                        </div>
+                        
+                        <div class="input-group">
+                            <label for="videoFile">Video Source</label>
+                            <div class="file-upload-container">
+                                <label class="custom-file-upload">
+                                    <input type="file" id="videoFile" name="videoFile" accept="video/*" required>
+                                    Browse Files
+                                </label>
+                                <span id="fileName" class="file-name">No file chosen</span>
+                            </div>
+                        </div>
+                        
+                        <!-- Intense Security Mode Toggle -->
+                        <div class="input-group" style="flex-direction: row; justify-content: space-between; align-items: center; margin-top: 0.5rem; padding: 0.8rem; background: rgba(239, 68, 68, 0.05); border: 1px solid rgba(239, 68, 68, 0.2); border-radius: 6px;">
+                            <div>
+                                <label for="intenseModeToggle" style="color: #ef4444; font-weight: 800; margin-bottom: 0;">🚨 Intense Security Mode</label>
+                                <p style="font-size: 0.7rem; color: var(--text-muted); margin: 0; margin-top: 0.2rem;">Auto-pause and trigger sirens on 100% match</p>
+                            </div>
+                            <label class="switch" style="position: relative; display: inline-block; width: 44px; height: 24px;">
+                                <input type="checkbox" id="intenseModeToggle" style="opacity: 0; width: 0; height: 0;">
+                                <span class="slider round" style="position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: rgba(255,255,255,0.1); transition: .4s; border-radius: 34px;"></span>
+                            </label>
+                        </div>
+                        
+                        <!-- NEW: Thermal Vision Mode Toggle -->
+                        <div class="input-group" style="flex-direction: row; justify-content: space-between; align-items: center; margin-top: 0.5rem; padding: 0.8rem; background: rgba(59, 130, 246, 0.05); border: 1px solid rgba(59, 130, 246, 0.2); border-radius: 6px;">
+                            <div>
+                                <label for="thermalModeToggle" style="color: #3b82f6; font-weight: 800; margin-bottom: 0;">🔥 Predator Thermal Mode</label>
+                                <p style="font-size: 0.7rem; color: var(--text-muted); margin: 0; margin-top: 0.2rem;">Render video with INFERNO colormap optics</p>
+                            </div>
+                            <label class="switch" style="position: relative; display: inline-block; width: 44px; height: 24px;">
+                                <input type="checkbox" id="thermalModeToggle" style="opacity: 0; width: 0; height: 0;">
+                                <span class="slider round thermal" style="position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: rgba(255,255,255,0.1); transition: .4s; border-radius: 34px;"></span>
+                            </label>
+                        </div>
+
+                        <button type="submit" id="submitBtn" class="btn-primary glow-button">
+                            <span class="btn-text">Initiate Trace</span>
+                            <span class="btn-loader hidden">Running...</span>
+                        </button>
+                    </form>
+                </div>
+                
+                <div class="panel-card glass flex-fill">
+                    <h2>Live Telemetry</h2>
+                    <div class="telemetry-container">
+                        <ul class="telemetry-log" id="telemetryLog">
+                            <li class="log-entry system-msg">[SYSTEM] GuardianTrace initialized. Privacy locks active.</li>
+                        </ul>
+                    </div>
+                    <button id="downloadReportBtn" class="btn-primary glow-button hidden" style="margin-top: 1rem; background: var(--success-color); flex-shrink: 0; z-index: 10;">
+                        <span class="btn-text">📄 Download Security Report</span>
+                    </button>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- Lightbox Modal -->
+    <div id="lightboxModal" class="lightbox hidden">
+        <span class="lightbox-close" id="lightboxClose">&times;</span>
+        <img id="lightboxImg" class="lightbox-content" src="">
+        <div id="lightboxCaption" class="lightbox-caption"></div>
+    </div>
+    
+    <!-- Red Alert Catastrophe Modal -->
+    <div id="redAlertModal" class="hidden" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 9999; display: flex; flex-direction: column; justify-content: center; align-items: center; background: rgba(0,0,0,0.85); backdrop-filter: blur(10px);">
+        <h1 style="color: #ef4444; font-size: 4rem; font-weight: 900; text-transform: uppercase; letter-spacing: 4px; text-shadow: 0 0 30px #ef4444; margin: 0; text-align: center;">TARGET LOCKED</h1>
+        <p style="color: white; font-size: 1.2rem; font-weight: 600; margin-top: 1rem; text-align: center;">100% Confidence Match Triggered. Video Stream Auto-Paused.</p>
+        <button id="acknowledgeAlertBtn" class="btn-primary glow-button" style="margin-top: 3rem; background: #ef4444; font-size: 1.5rem; padding: 1.5rem 3rem; border-radius: 12px; box-shadow: 0 0 30px rgba(239, 68, 68, 0.6);">
+            <span class="btn-text">ACKNOWLEDGE & DISARM</span>
+        </button>
+    </div>
+
+    <script src="/static/app.js?v=15"></script>
+</body>
+</html>
